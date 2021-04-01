@@ -21,6 +21,8 @@ import {
   TextInput,
   TouchableHighlight,
   View,
+  Alert,
+  Linking
 } from 'react-native';
 
 const defaultStyles = {
@@ -301,13 +303,28 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
 
       request.send();
     } else if (rowData.isCurrentLocation === true) {
-      // display loader
-      _enableRowLoader(rowData);
+      if (!navigator.geolocation.requestAuthorization) {
+        return;
+      }
 
-      setStateText(_renderDescription(rowData));
+      const authorization = await navigator.geolocation.requestAuthorization('whenInUse');
+      if (authorization !== 'granted') {
+        Alert.alert(
+          'Warning',
+          'You have to allow the app to use the device location in order to perform this action',
+          [
+            { text: 'Cancel' },
+            { text: 'Settings', onPress: () => Linking.openURL('app-settings:') }
+          ])
+      } else {
+        // display loader
+        _enableRowLoader(rowData);
 
-      delete rowData.isLoading;
-      getCurrentLocation();
+        setStateText(_renderDescription(rowData));
+
+        delete rowData.isLoading;
+        getCurrentLocation();
+      }
     } else {
       setStateText(_renderDescription(rowData));
 
