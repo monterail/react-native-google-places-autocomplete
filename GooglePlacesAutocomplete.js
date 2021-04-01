@@ -22,7 +22,8 @@ import {
   TouchableHighlight,
   View,
   Alert,
-  Linking
+  Linking,
+  PermissionsAndroid
 } from 'react-native';
 
 const defaultStyles = {
@@ -307,15 +308,25 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
         return;
       }
 
-      const authorization = await navigator.geolocation.requestAuthorization('whenInUse');
+      let authorization;
+      if(Platform.OS === 'ios'){
+        authorization = await navigator.geolocation.requestAuthorization('whenInUse');
+      } else {
+        authorization = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+      }
+
       if (authorization !== 'granted') {
+        const options = [{ text: 'Cancel' }]
+        if(Platform.OS === 'ios'){
+          options.push({ text: 'Settings', onPress: () => Linking.openURL('app-settings:') })
+        }
         Alert.alert(
           'Warning',
           'You have to allow the app to use the device location in order to perform this action',
-          [
-            { text: 'Cancel' },
-            { text: 'Settings', onPress: () => Linking.openURL('app-settings:') }
-          ])
+          options
+        )
       } else {
         // display loader
         _enableRowLoader(rowData);
